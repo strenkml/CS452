@@ -1,0 +1,99 @@
+<!--
+Matthew Strenk
+3/5/17
+Computer Graphics
+Lab5: HTML
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+    <title>Matthew Strenk: Lab5</title>
+    <script id="vertex-shader" type="x-shader/x-vertex">
+      attribute vec4 vertexPosition;
+      varying vec4 fragmentColor;
+      uniform float alpha;
+      uniform float beta;
+      uniform float gamma;
+      uniform float transX;
+      uniform float transY;
+      uniform float scaleX;
+      uniform float scaleY;
+      mat4 M_x;
+      mat4 M_y;
+      mat4 M_z;
+      mat4 M_tx;
+      mat4 M_ty;
+      mat4 M_sx;
+      mat4 M_sy;
+
+      attribute vec2 textureCoordinate;
+      varying vec2 fTextureCoordinate;
+
+      void main() {
+          fTextureCoordinate = textureCoordinate;
+
+          M_x = mat4
+          (1, 0, 0, 0,
+           0, cos(alpha), -sin(alpha), 0,
+           0, sin(alpha), cos(alpha), 0,
+           0, 0, 0, 1);
+          M_y = mat4
+          (cos(beta), 0, -sin(beta), 0,
+           0, 1, 0, 0,
+           sin(beta), 0, cos(beta), 0,
+           0, 0, 0, 1);
+          M_z = mat4
+          (cos(gamma), -sin(gamma), 0, 0,
+           sin(gamma), cos(gamma), 0, 0,
+           0, 0, 1, 0,
+           0, 0, 0, 1);
+          M_tx = mat4
+          (1, 0, 0, 0,
+           0, 1, 0, 0,
+           0, 0, 1, 0,
+           transX, 0, 0, 1);
+          M_ty = mat4
+          (1, 0, 0, 0,
+           0, 1, 0, 0,
+           0, 0, 1, 0,
+           0, transY, 0, 1);
+          M_sx = mat4
+          (scaleX, 0, 0, 0,
+           0, 1, 0, 0,
+           0, 0, 1, 0,
+           0, 0, 0, 1);
+          M_sy = mat4
+          (1, 0, 0, 0,
+           0, scaleY, 0, 0,
+           0, 0, 1, 0,
+           0, 0, 0, 1);
+
+          gl_Position = M_ty * M_tx * M_z * M_y * M_x * M_sy * M_sx * vertexPosition;
+      }
+    </script>
+
+    <script id="fragment-shader" type="x-shader/x-fragment">
+      precision mediump float;
+      varying vec2 fTextureCoordinate;
+      uniform sampler2D textMap0;
+
+      void main(){
+        vec4 color0 = texture2D(textMap0, fTextureCoordinate);
+        gl_FragColor.r = color0.r;
+        gl_FragColor.g = color0.g;
+        gl_FragColor.b = color0.b;
+        gl_FragColor.a = 1.0;
+      }
+    </script>
+
+    <script type="text/javascript" src="../Common/webgl-utils.js"></script>
+    <script type="text/javascript" src="../Common/initShaders.js"></script>
+    <script type="text/javascript" src="../Common/MV.js"></script>
+    <script type="text/javascript" src="Lab5.js"></script>
+  </head>
+  <body onload="init()" onkeydown="transformShapeKeys(event)">
+    <canvas id="gl-canvas" width="512" height="512"></canvas><br/>
+    <img id="rickPicture" hidden src="rickPicture.jpg"/>
+  </body>
+</html>

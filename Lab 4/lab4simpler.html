@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script id="vertex-shader" type="x-shader/x-vertex">
+
+    precision mediump float;
+    attribute vec4 vertexPosition;
+    attribute vec3 nv;
+
+    uniform mat4 M, M_inversetranspose, P_orth, P_persp;
+    uniform float orthIsOn;
+    uniform vec3 p0;
+    uniform vec3 Ia, Id, Is;
+    varying vec3 Ia_pp0, Id_pp0, Is_pp0;
+    varying vec3 i, view, n;
+
+    void main() {
+        gl_PointSize = 1.0;
+
+        vec4 vertexPositionTransformed = M * vertexPosition;
+        vec4 nv4 = vec4(nv.x, nv.y, nv.z, 1.0);
+        vec4 nv4transformed = M_inversetranspose * nv4;
+        vec3 nvtransformed = normalize(nv4transformed.xyz);
+
+        float distance = length(p0 - vertexPositionTransformed.xyz);
+
+        float a = .00005;
+        float b = .0;
+        float c = .0;
+        float scalefactor = a * distance * distance + b * distance + c;
+        Ia_pp0 = Ia / scalefactor;
+        Id_pp0 = Id / scalefactor;
+        Is_pp0 = Is / scalefactor;
+
+        i = normalize(p0 - vertexPositionTransformed.xyz);
+
+        view = normalize(vec3(.0, .0, .0) - vertexPositionTransformed.xyz);
+        n = nvtransformed;
+
+        if (orthIsOn > 0.5) {
+            gl_Position = P_orth * vertexPositionTransformed;
+        } else {
+            gl_Position = P_persp * vertexPositionTransformed;
+        }
+    }
+
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+
+    precision mediump float;
+    uniform vec3 ka, kd, ks;
+    uniform float alpha;
+
+    varying vec3 Ia_pp0, Id_pp0, Is_pp0;
+    varying vec3 i, view, n;
+
+    void main() {
+        vec3 Ra, Rd, Rs;
+        vec3 view_renorm, i_renorm, n_renorm;
+
+        view_renorm = normalize(view);
+        i_renorm = normalize(i);
+        n_renorm = normalize(n);
+
+        Ra.r = ka.r * Ia_pp0.r;
+        Ra.g = ka.g * Ia_pp0.g;
+        Ra.b = ka.b * Ia_pp0.b;
+
+        float costheta = dot(i_renorm, n_renorm);
+        Rd.r = kd.r * Id_pp0.r * max(costheta, 0.0);
+        Rd.g = kd.r * Id_pp0.g * max(costheta, 0.0);
+        Rd.b = kd.r * Id_pp0.b * max(costheta, 0.0);
+
+        vec3 r = 2.0 * costheta * n_renorm - i_renorm;
+
+        float cosphi = dot(r, view_renorm);
+        float shine = pow(max(cosphi, 0.0), alpha);
+        float account;
+        if (costheta > 0.0){
+            account = 1.0;
+        } else {
+            account = 0.0;
+        }
+
+        Rs.r = ks.r * Is_pp0.r * shine * account;
+        Rs.g = ks.g * Is_pp0.g * shine * account;
+        Rs.b = ks.b * Is_pp0.b * shine * account;
+
+        vec3 R = clamp(Ra + Rd + Rs, 0.0, 1.0);
+        gl_FragColor = vec4(R.r, R.g, R.b, 1.0);
+    }
+
+</script>
+
+<script type="text/javascript" src="../Common/webgl-utils.js"></script>
+<script type="text/javascript" src="../Common/initShaders.js"></script>
+<script type="text/javascript" src="../Common/MV.js"></script>
+<script type="text/javascript" src="lab4simpler.js"></script>
+<script type="text/javascript" src="object.js"></script>
+</head>
+
+<body onload = "initGL()">
+    <canvas id="gl-canvas" height="512" width="512">
+    </canvas>
+    <br/>
+    <button type="button" onclick="showOrthographic()">Orthographic</button>
+    <button type="button" onclick="showPerspective()">Perspective</button>
+    <input type="button" id="1" value="Specular On" onclick="toggleSpec(this);">
+    <input type="button" id="2" value="Point Light On" onclick="togglePoint(this);">
+    <input type="button" id="3" value="Spotlight On" onclick="toggleSpot(this);">    
+</body>
+</html>
